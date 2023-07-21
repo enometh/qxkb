@@ -39,8 +39,10 @@ class QXKB : public QApplication
 	Q_OBJECT
 
 
+#if 0
 protected:
 	virtual bool x11EventFilter(XEvent *);
+#endif
 
 
 public:
@@ -50,7 +52,9 @@ public:
 	bool firstStart();
 	void setStartup();
 	void set_event_names();
+#if 0
 	void x11Hook();
+#endif
 public slots:
 	void groupChange(int index);
 	void layoutChange();
@@ -73,7 +77,9 @@ private:
 	void draw_icon();
 	void createMenu();
 	bool load_rules();
+#if 0
 	int getLayoutNumber();
+#endif
 	void updateAppsLanglist();
 	void cheklanguage();
 

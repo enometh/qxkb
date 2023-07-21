@@ -112,6 +112,7 @@ void XKeyboard::retrieveNumKbdGroups()
 }
 
 
+#if 0
 /** Examines an X Event passed to it and takes actions if the event is of
   * interest to XKeyboard */
 void XKeyboard::processEvent(XEvent *ev)
@@ -132,4 +133,5 @@ void XKeyboard::processEvent(XEvent *ev)
 
 	}
 }
+#endif
 

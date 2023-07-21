@@ -32,6 +32,7 @@ QXKB::QXKB(int &argc, char **argv) : QApplication(argc, argv),
 
 }
 
+#if 0
 void QXKB::x11Hook()
 {
 	Display	    *_display;
@@ -44,6 +45,7 @@ void QXKB::x11Hook()
 
 	XSelectInput(_display, _window,G_event);
 }
+#endif
 
 void QXKB::set_event_names()
 {
@@ -159,6 +161,7 @@ bool QXKB::firstStart()
 }
 
 
+#if 0
 bool QXKB::x11EventFilter(XEvent *event)
 {
 	switch (((XKeyEvent *)event)->type) {
@@ -175,6 +178,7 @@ bool QXKB::x11EventFilter(XEvent *event)
 	}
 	return false;
 }
+#endif
 
 void QXKB::init()
 {
@@ -201,12 +205,14 @@ void QXKB::init()
 	connect(keys,SIGNAL(layoutChanged()),this,SLOT(layoutChange()));
 }
 
+#if 0
 int QXKB::getLayoutNumber()
 {
 	XkbStateRec rec;
 	XkbGetState(QX11Info::display(), XkbUseCoreKbd, &rec);
 	return (int)rec.group;
 }
+#endif
 
 
 void QXKB::showClipboard()
