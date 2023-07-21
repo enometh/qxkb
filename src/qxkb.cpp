@@ -29,6 +29,7 @@ QXKB::QXKB(int &argc, char **argv) : QApplication(argc, argv),
 	keys = new XKeyboard ();
 	set_event_names();
 	setWindowIcon(QIcon(":/about/qxkb.png"));
+	qApp->installNativeEventFilter(keys);
 
 }
 

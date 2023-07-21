@@ -135,3 +135,12 @@ void XKeyboard::processEvent(XEvent *ev)
 }
 #endif
 
+bool
+XKeyboard::nativeEventFilter(const QByteArray &eventType, void *message, long *result)
+{
+	qDebug()<<"QXKB::nativeEventFilter";
+        if (eventType == QByteArrayLiteral("xcb_generic_event_t")) {
+		qDebug()<<"xcb_generic_event_t";
+	}
+        return false;
+}

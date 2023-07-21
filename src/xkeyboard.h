@@ -19,12 +19,13 @@
 #define XKEYBOARD_H
 
 #include "defs.h"
+#include <qabstractnativeeventfilter.h>
 
 /**This class incapsulates XKeyboard Extension interface
   *@author Leonid Zeitlin
   */
 
-class XKeyboard : public QObject
+class XKeyboard : public QObject, public QAbstractNativeEventFilter
 {
 	Q_OBJECT
 private:
@@ -55,6 +56,9 @@ public:
 	/** Examines an X Event passed to it and takes actions if the event is of
 	  * interest to XKeyboard */
 	void processEvent(XEvent *ev);
+
+	bool nativeEventFilter(const QByteArray &eventType, void *message, long *) override;
+
 private: // Private methods
 	/** No descriptions */
 	void retrieveNumKbdGroups();
