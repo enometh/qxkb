@@ -229,6 +229,7 @@ void QXKB::draw_icon()
 		exit();
 	}
 
+	qDebug() << "QXKB::draw_icon()";
 	QString layout = xkbConf->layouts[currentGroup].layout;
 
 	trayIcon->setContextMenu(contextMenu);
@@ -293,6 +294,7 @@ void QXKB::groupChange(int index)
 	current_wm=X11tools::getActiveWindowId();
 	current_app=X11tools::getActiveWindowAppName(current_wm);
 
+	qDebug()<<"QXKB::groupChange";
 	if (xkbConf->status==DONT_USE_XKB)
 		return;
 	currentGroup=index;
@@ -384,6 +386,7 @@ void  QXKB::reconfigure()
 	QStringList tmpGrName;
 	int size = keys->getNumKbdGroups();
 	QHash<QString, QString> layouts = rule->layouts;
+	qDebug()<<"QXKB::reconfigure";
 	for(int i=0; i<xkbConf->layouts.size(); i++) {
 		tmpGrName.insert(i,layouts.value(xkbConf->layouts[i].layout));
 	}
@@ -404,6 +407,7 @@ void  QXKB::reconfigure()
 		xkbConf=newConf;
 		init();
 		createMenu();
+		qDebug()<<"QXKB::reconfigure";
 		draw_icon();
 	} else
 		delete newConf;
