@@ -81,7 +81,7 @@ bool isRun(qint64 pid)
 			return false;
 		}
 		QStringList proccessList=proc.entryList(QDir::Dirs);
-		qDebug()<<"Proc list "<<proccessList;
+//		qDebug()<<"Proc list "<<proccessList;
 		QTextStream in(&pidFile);
 		while (!in.atEnd()) {
 			QString pidString = in.readLine();
