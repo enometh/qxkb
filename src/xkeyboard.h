@@ -30,6 +30,7 @@ class XKeyboard : public QObject, public QAbstractNativeEventFilter
 	Q_OBJECT
 private:
 	int m_event_code;
+	int m_error_code;
 	int m_numgroups;
 
 	static XKeyboard *m_self;

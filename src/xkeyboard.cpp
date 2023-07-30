@@ -25,39 +25,65 @@ XKeyboard *XKeyboard::m_self = 0;
 
 XKeyboard::XKeyboard()
 {
-	Display *display = QX11Info::display();
-	XSelectInput(display, DefaultRootWindow(display), SubstructureNotifyMask);
-	int opcode, errorBase, major = XkbMajorVersion, minor = XkbMinorVersion;
+
+	xcb_connection_t *conn =  QX11Info::connection();
+	if (! conn)
+		qCritical()<<"Could not obtain an XCBConnection.\n";
 
 	// check the library version
-	if (!XkbLibraryVersion(&major, &minor)) {
-		qWarning()<<tr("This program was built against XKB extension library\n"
-		               "version %1.%2, but is run with the library version %3.%4.\n"
-		               "This may cause various problems and even result in a complete\n"
-		               "failure to function\n").arg(XkbMajorVersion).arg(XkbMinorVersion).arg(major).arg(minor);
-	}
-
-	// initialize the extension
-	m_xkb_available = XkbQueryExtension(display, &opcode, &m_event_code, &errorBase, &major, &minor);
-	if (!m_xkb_available) {
-		qCritical() << tr("The X Server does not support a compatible XKB extension.\n"
+	const xcb_query_extension_reply_t *extreply;
+	extreply = xcb_get_extension_data(conn, &xcb_xkb_id);
+	if (!extreply->present) {
+		qCritical() << ("The X Server does not support a compatible XKB extension.\n"
 		                  "Either the server is not XKB-capable or the extension was disabled.\n"
 		                  "This program would not work with this server, so it will exit now\n");
 	} else {
+		qDebug()<<"initializing xcb-xkb\n";
+		m_event_code = extreply->first_event;
+		m_error_code = extreply->first_error;
+		xcb_xkb_use_extension(conn, XCB_XKB_MAJOR_VERSION, XCB_XKB_MINOR_VERSION);
+
+		static const xcb_xkb_map_part_t required_map_parts =
+			(xcb_xkb_map_part_t)
+			(XCB_XKB_MAP_PART_KEY_TYPES |
+			 XCB_XKB_MAP_PART_KEY_SYMS |
+			 XCB_XKB_MAP_PART_MODIFIER_MAP |
+			 XCB_XKB_MAP_PART_EXPLICIT_COMPONENTS |
+			 XCB_XKB_MAP_PART_KEY_ACTIONS |
+			 XCB_XKB_MAP_PART_VIRTUAL_MODS |
+			 XCB_XKB_MAP_PART_VIRTUAL_MOD_MAP);
+
+		static const xcb_xkb_event_type_t required_events =
+			(xcb_xkb_event_type_t)
+			(//// new keyboard:
+				XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY |
+				//// group names change:
+				XCB_XKB_EVENT_TYPE_NAMES_NOTIFY |
+				//// keyboard mapping change:
+				XCB_XKB_EVENT_TYPE_MAP_NOTIFY |
+				//// group state change, i.e. the current group changed:
+				XCB_XKB_EVENT_TYPE_STATE_NOTIFY //|
+//				XCB_XKB_EVENT_TYPE_INDICATOR_STATE_NOTIFY |
+//				XCB_XKB_EVENT_TYPE_MAP_NOTIFY
+				);
+
 		// register for XKB events
-		//// group state change, i.e. the current group changed:
-		XkbSelectEventDetails(display, XkbUseCoreKbd, XkbStateNotify,
-		                      XkbAllStateComponentsMask, XkbGroupStateMask);
-		//// keyboard mapping change:
-		XkbSelectEventDetails(display, XkbUseCoreKbd, XkbMapNotify,
-		                      XkbAllMapComponentsMask, XkbKeySymsMask);
-		//// group names change:
-		XkbSelectEventDetails(display, XkbUseCoreKbd, XkbNamesNotify,
-		                      XkbAllNamesMask, XkbGroupNamesMask);
-		//// new keyboard:
-		XkbSelectEventDetails(display, XkbUseCoreKbd, XkbNewKeyboardNotify,
-		                      XkbAllNewKeyboardEventsMask, XkbAllNewKeyboardEventsMask);
-		// retrieve the number of keyboard groups
+		xcb_xkb_select_events(conn,
+				      // deviceSpec
+				      XCB_XKB_ID_USE_CORE_KBD,
+				      // affectWhich
+				      required_events,
+				      //clear
+				      0,
+				      //selectAll
+				      required_events,
+				      //affectMap
+				      0xff,
+				      //map
+				      0xff,
+				      //details
+				      NULL);
+
 		retrieveNumKbdGroups();
 	}
 	m_self = this;
@@ -72,7 +98,16 @@ XKeyboard::~XKeyboard()
 /** Set the current keyboard group to the given groupno */
 void XKeyboard::setGroupNo(int groupno)
 {
-	XkbLockGroup(QX11Info::display(), XkbUseCoreKbd, groupno);
+	xcb_connection_t *conn =  QX11Info::connection();
+	xcb_xkb_latch_lock_state(conn,
+				 XCB_XKB_ID_USE_CORE_KBD,
+				 0, // affectModLocks
+				 0, // modLocks
+				 True, // lockGroup
+				 groupno, // groupLock
+				 0,    // affectModLatches
+				 False, // latchGroup
+				 0);	// GroupLatch
 }
 
 #ifndef HAVE_LIBXKLAVIER
@@ -92,26 +127,40 @@ XKeyboard * XKeyboard::self()
 /** return the current keyboard group index */
 int XKeyboard::getGroupNo()
 {
-	XkbStateRec rec;
-	XkbGetState(QX11Info::display(), XkbUseCoreKbd, &rec);
-	return (int) rec.group;
+	int group = -1;
+	xcb_connection_t *conn =  QX11Info::connection();
+	xcb_generic_error_t *e;
+	xcb_xkb_get_state_reply_t *rec =
+		xcb_xkb_get_state_reply(conn,
+			xcb_xkb_get_state(conn, XCB_XKB_ID_USE_CORE_KBD),
+					&e);
+	if (rec) {
+		group = rec->group;
+		free(rec);
+	} else if (e) {
+		qCritical()<<"xkb_get_state failed on " << e->resource_id << " with error code " << e->error_code;
+		free(e);
+	}
+	return group;
 }
 
 
 
 void XKeyboard::retrieveNumKbdGroups()
 {
-	XkbDescRec xkb;
-
-	memset(&xkb, 0, sizeof(xkb));
-	/* Interestingly, in RedHat 6.0 (XFree86 3.3.3.1) the XkbGetControls call
-	below works even if xkb.device_spec is not set. But in RedHat 7.1 (XFree86 4.0.3)
-	it returns BadImplementation status code, and you have to specify
-	xkb.device_spec = XkbUseCoreKbd. */
-	xkb.device_spec = XkbUseCoreKbd;
-	XkbGetControls(QX11Info::display(), XkbGroupsWrapMask, &xkb);
-	m_numgroups = xkb.ctrls->num_groups;
-	XkbFreeControls(&xkb, XkbGroupsWrapMask, 1);
+	xcb_connection_t *conn =  QX11Info::connection();
+	xcb_generic_error_t *e;
+	xcb_xkb_get_controls_reply_t *ctrls =
+		xcb_xkb_get_controls_reply(conn,
+		   xcb_xkb_get_controls(conn, XCB_XKB_ID_USE_CORE_KBD),
+					   &e);
+	if (ctrls) {
+		m_numgroups = ctrls->numGroups;
+	} else if (e) {
+		qCritical()<<"xkb_get_controls failed on " << e->resource_id << " with error code " << e->error_code;
+		free(e);
+	}
+	free(ctrls);
 }
 
 

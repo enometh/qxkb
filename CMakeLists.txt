@@ -81,7 +81,7 @@ QT5_ADD_RESOURCES(QXKB_RCC ${QXKB_RESOURCES})
 set(EXE_NAME ${CMAKE_PROJECT_NAME})
 add_executable(${EXE_NAME} ${QXKB_SOURCES} ${QXKB_UI} ${QXKB_MOC_SRC} ${QXKB_RCC} ${QM})
 qt5_use_modules(${EXE_NAME} Core Svg Widgets X11Extras)
-target_link_libraries(${EXE_NAME} ${X11_X11_LIB} xkbfile)
+target_link_libraries(${EXE_NAME} ${X11_X11_LIB} xkbfile xcb xcb-xkb)
 
 
 # installation
