@@ -194,20 +194,20 @@ XKeyboard::nativeEventFilter(const QByteArray &eventType, void *message, long *r
 	qDebug()<<"QXKB::nativeEventFilter";
         if (eventType == QByteArrayLiteral("xcb_generic_event_t")) {
 		const xcb_generic_event_t *e = (xcb_generic_event_t *)(message);
-		if (e->response_type & ~0x80 != m_event_code)
+		if ((e->response_type & ~0x80) != m_event_code)
 			return false;
 		// there isn't any common xkb_event struct, but we
 		// want to get the second xkbType uint8 field which is
 		// in all xkb_event_* structs
 		auto any_xkb_type = ((xcb_xkb_state_notify_event_t *)e)->xkbType;
-		if (any_xkb_type == XCB_XKB_EVENT_TYPE_STATE_NOTIFY) {
+		if (any_xkb_type == XCB_XKB_STATE_NOTIFY) {
 			// state notify event, the current group has changed
 			emit groupChanged(((xcb_xkb_state_notify_event_t *)e)->group);
 			qDebug()<<"Emit groupChanged";
-		} else if (((any_xkb_type == XCB_XKB_EVENT_TYPE_MAP_NOTIFY) &&
-			    (((xcb_xkb_indicator_map_notify_event_t *)e)->mapChanged))
-		           || (any_xkb_type == XCB_XKB_EVENT_TYPE_NAMES_NOTIFY) && (((xcb_xkb_names_notify_event_t *)e)->changed)
-			   || (any_xkb_type == XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY)) {
+		} else if (((any_xkb_type == XCB_XKB_MAP_NOTIFY) &&
+			    (((xcb_xkb_map_notify_event_t *)e)->changed))
+		           || (any_xkb_type == XCB_XKB_NAMES_NOTIFY) && (((xcb_xkb_names_notify_event_t *)e)->changed)
+			   || (any_xkb_type == XCB_XKB_NEW_KEYBOARD_NOTIFY)) {
 			// keyboard layout has changed
 			retrieveNumKbdGroups();
 			emit layoutChanged();
